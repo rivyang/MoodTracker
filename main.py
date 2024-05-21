@@ -5,7 +5,10 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///moodtracker.db')
+db_url = os.environ.get('DATABASE_URL', 'sqlite:///moodtracker.db')
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -13,61 +16,61 @@ db = SQLAlchemy(app)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    moods = db.relationship('MoodLog', backref='user', lazy=True)
+    mood_logs = db.relationship('MoodLog', backref='user', lazy=True)
 
 class MoodLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     mood = db.Column(db.String(50), nullable=False)
     description = db.Column(db.String(255), nullable=True)
-    date_logged = db.Column(db.DateTime, default=datetime.utcnow)
+    logged_date = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 @app.before_first_request
-def create_tables():
+def create_database_tables():
     db.create_all()
 
-@app.route('/register', methods=['POST'])
+@app.route('/user/register', methods=['POST'])
 def register_user():
     data = request.get_json()
-    username = data.get('username')
-    if not username:
+    new_username = data.get('username')
+    if not new_username:
         return jsonify({'message': 'Username is required'}), 400
-    if User.query.filter_by(username=username).first():
+    if User.query.filter_by(username=new_username).first():
         return jsonify({'message': 'Username is already taken'}), 409
-    user = User(username=username)
-    db.session.add(user)
+    new_user = User(username=new_username)
+    db.session.add(new_user)
     db.session.commit()
-    return jsonify({'message': f'User {username} successfully registered'}), 201
+    return jsonify({'message': f'User {new_username} successfully registered'}), 201
 
-@app.route('/log_mood', methods=['POST'])
-def log_mood():
+@app.route('/mood/log', methods=['POST'])
+def log_user_mood():
     data = request.get_json()
-    username = data.get('username')
-    mood = data.get('mood')
-    description = data.get('description', None)
-    if not all([username, mood]):
+    user_username = data.get('username')
+    user_mood = data.get('mood')
+    mood_description = data.get('description', None)
+    if not all([user_username, user_mood]):
         return jsonify({'message': 'Username and mood are required'}), 400
-    user = User.query.filter_by(username=username).first()
-    if not user:
+    registered_user = User.query.filter_by(username=user_username).first()
+    if not registered_user:
         return jsonify({'message': 'User not found'}), 404
-    mood_log = MoodLog(mood=mood, description=description, user_id=user.id)
-    db.session.add(mood_log)
+    new_mood_log = MoodLog(mood=user_mood, description=mood_description, user_id=registered_user.id)
+    db.session.add(new_mood_log)
     db.session.commit()
     return jsonify({'message': 'Mood logged successfully'}), 201
 
-@app.route('/mood_report/<string:username>', methods=['GET'])
-def mood_report(username):
-    user = User.query.filter_by(username=username).first()
-    if not user:
+@app.route('/mood/report/<string:username>', methods=['GET'])
+def generate_user_mood_report(username):
+    target_user = User.query.filter_by(username=username).first()
+    if not target_user:
         return jsonify({'message': 'User not found'}), 404
-    mood_logs = MoodLog.query.filter_by(user_id=user.id).all()
-    report = {}
-    for log in mood_logs:
-        date = log.date_logged.strftime('%Y-%m-%d')
-        if date not in report:
-            report[date] = []
-        report[date].append({'mood': log.mood, 'description': log.description})
-    return jsonify(report)
+    user_mood_logs = MoodLog.query.filter_by(user_id=target_user.id).all()
+    mood_report = {}
+    for log in user_mood_logs:
+        log_date = log.logged_date.strftime('%Y-%m-%d')
+        if log_date not in mood_report:
+            mood_report[log_date] = []
+        mood_report[log_date].append({'mood': log.mood, 'description': log.description})
+    return jsonify(mood_report)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
