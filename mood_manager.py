@@ -2,75 +2,75 @@ import os
 from datetime import datetime
 import json
 
-MOOD_DATA_FILE = os.getenv('MOOD_DATA_FILE', 'mood_data.json')
+MOOD_DATA_FILE_PATH = os.getenv('MOOD_DATA_FILE', 'mood_data.json')
 
-def read_data_from_file():
+def load_moods_from_file():
     try:
-        with open(MOOD_DATA_FILE, 'r') as file:
+        with open(MOOD_DATA_FILE_PATH, 'r') as file:
             return json.load(file)
     except FileNotFoundError:
         return []
 
-def write_data_to_file(data):
-    with open(MOOD_DATA_FILE, 'w') as file:
-        json.dump(data, file, indent=4)
+def save_moods_to_file(moods):
+    with open(MOOD_DATA_FILE_PATH, 'w') as file:
+        json.dump(moods, file, indent=4)
 
-class MoodManager:
+class MoodTracker:
     @staticmethod
-    def add_mood(mood, timestamp=None):
-        if timestamp is None:
-            timestamp = datetime.now().isoformat()
-        data = read_data_from_file()
-        data.append({'mood': mood, 'timestamp': timestamp})
-        write_data_to_file(data)
+    def record_mood(mood, recorded_at=None):
+        if recorded_at is None:
+            recorded_at = datetime.now().isoformat()
+        moods = load_moods_from_file()
+        moods.append({'mood': mood, 'timestamp': recorded_at})
+        save_moods_to_file(moods)
         return True
 
     @staticmethod
-    def remove_mood(timestamp):
-        data = read_data_from_file()
-        data = [entry for entry in data if entry['timestamp'] != timestamp]
-        write_data_to_file(data)
+    def delete_mood(recorded_at):
+        moods = load_moods_from_file()
+        moods = [entry for entry in moods if entry['timestamp'] != recorded_at]
+        save_moods_to_file(moods)
         return True
 
     @staticmethod
-    def update_mood(timestamp, new_mood):
-        data = read_data_from_file()
-        for entry in data:
-            if entry['timestamp'] == timestamp:
-                entry['mood'] = new_mood
-                write_data_to_file(data)
+    def change_mood(recorded_at, updated_mood):
+        moods = load_moods_from_file()
+        for entry in moods:
+            if entry['timestamp'] == recorded_at:
+                entry['mood'] = updated_mood
+                save_moods_to_file(moods)
                 return True
         return False
 
     @staticmethod
-    def list_all_moods():
-        return read_data_from_file()
+    def display_all_moods():
+        return load_moods_from_file()
 
     @staticmethod
-    def analyze_moods():
-        data = read_data_from_file()
-        mood_count = {}
-        for entry in data:
+    def summarize_moods():
+        moods = load_moods_from_file()
+        mood_frequency = {}
+        for entry in moods:
             mood = entry['mood']
-            if mood in mood_count:
-                mood_count[mood] += 1
+            if mood in mood_frequency:
+                mood_frequency[mood] += 1
             else:
-                mood_count[mood] = 1
-        analysis = {
-            'total_entries': len(data),
-            'mood_distribution': mood_count
+                mood_frequency[mood] = 1
+        summary = {
+            'total_entries': len(moods),
+            'mood_distribution': mood_frequency
         }
-        return analysis
+        return summary
 
     @staticmethod
-    def generate_insights():
-        analysis = MoodManager.analyze_moods()
-        mood_dist = analysis['mood_distribution']
-        total_entries = analysis['total_entries']
-        most_common_mood = max(mood_dist, key=mood_dist.get) if mood_dist else 'None'
+    def generate_mood_insights():
+        summary = MoodTracker.summarize_moods()
+        mood_distribution = summary['mood_distribution']
+        total_mood_entries = summary['total_entries']
+        prevalent_mood = max(mood_distribution, key=mood_distribution.get) if mood_distribution else 'None'
         insights = {
-            'most_common_mood': most_common_mood,
-            'entries_analyzed': total_entries,
+            'most_common_mood': prevalent_mood,
+            'entries_analyzed': total_mood_entries,
         }
-        insights['personalized_insight'] = f'Your most common mood is {most_common_mood}.'
+        insights['insight_message'] = f'Your most common mood is {prevalent_mood}.'
         return insights
