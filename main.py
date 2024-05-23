@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import joinedload
 import os
 from datetime import datetime
 
@@ -42,28 +43,36 @@ def register_user():
     db.session.commit()
     return jsonify({'message': f'User {new_username} successfully registered'}), 201
 
-@app.route('/mood/log', methods=['POST'])
-def log_user_mood():
+@app.route('/mood/logs', methods=['POST'])
+def log_multiple_moods():
+    """Endpoint to log multiple moods for a user in one request."""
     data = request.get_json()
-    user_username = data.get('username')
-    user_mood = data.get('mood')
-    mood_description = data.get('description', None)
-    if not all([user_username, user_mood]):
-        return jsonify({'message': 'Username and mood are required'}), 400
-    registered_user = User.query.filter_by(username=user_username).first()
-    if not registered_user:
+    user_id = data.get('user_id')
+    logs = data.get('logs')  # Expecting a list of mood and optional description dictionaries
+    
+    if not user_id or not logs:
+        return jsonify({'message': 'User ID and logs data are required'}), 400
+    
+    user = User.query.get(user_id)
+    if not user:
         return jsonify({'message': 'User not found'}), 404
-    new_mood_log = MoodLog(mood=user_mood, description=mood_description, user_id=registered_user.id)
-    db.session.add(new_mood_log)
+
+    for log in logs:
+        new_mood_log = MoodLog(mood=log['mood'], 
+                               description=log.get('description'), 
+                               user_id=user_id)
+        db.session.add(new_mood_log)
+        
     db.session.commit()
-    return jsonify({'message': 'Mood logged successfully'}), 201
+    
+    return jsonify({'message': f'{len(logs)} moods logged successfully'}), 201
 
 @app.route('/mood/report/<string:username>', methods=['GET'])
 def generate_user_mood_report(username):
     target_user = User.query.filter_by(username=username).first()
     if not target_user:
         return jsonify({'message': 'User not found'}), 404
-    user_mood_logs = MoodLog.query.filter_by(user_id=target_user.id).all()
+    user_mood_logs = MoodLog.query.options(joinedload(MoodLog.user)).filter_by(user_id=target_user.id).all()
     mood_report = {}
     for log in user_mood_logs:
         log_date = log.logged_date.strftime('%Y-%m-%d')
