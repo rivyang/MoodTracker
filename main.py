@@ -3,8 +3,11 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import joinedload
 import os
 from datetime import datetime
+import logging
 
 app = Flask(__name__)
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
 
 db_url = os.environ.get('DATABASE_URL', 'sqlite:///moodtracker.db')
 if db_url.startswith("postgres://"):
@@ -35,26 +38,30 @@ def register_user():
     data = request.get_json()
     new_username = data.get('username')
     if not new_username:
+        logging.warning('Attempt to register user without specifying a username')
         return jsonify({'message': 'Username is required'}), 400
     if User.query.filter_by(username=new_username).first():
+        logging.info(f'User registration failed - Username {new_username} is already taken')
         return jsonify({'message': 'Username is already taken'}), 409
     new_user = User(username=new_username)
     db.session.add(new_user)
     db.session.commit()
+    logging.info(f'User {new_username} successfully registered')
     return jsonify({'message': f'User {new_username} successfully registered'}), 201
 
 @app.route('/mood/logs', methods=['POST'])
 def log_multiple_moods():
-    """Endpoint to log multiple moods for a user in one request."""
     data = request.get_json()
     user_id = data.get('user_id')
-    logs = data.get('logs')  # Expecting a list of mood and optional description dictionaries
+    logs = data.get('logs')
     
     if not user_id or not logs:
+        logging.warning('Attempt to log moods without specifying user ID or logs')
         return jsonify({'message': 'User ID and logs data are required'}), 400
     
     user = User.query.get(user_id)
     if not user:
+        logging.warning(f'Attempt to log moods for non-existing user ID: {user_id}')
         return jsonify({'message': 'User not found'}), 404
 
     for log in logs:
@@ -64,13 +71,14 @@ def log_multiple_moods():
         db.session.add(new_mood_log)
         
     db.session.commit()
-    
+    logging.info(f'Successfully logged {len(logs)} moods for user ID: {user_id}')
     return jsonify({'message': f'{len(logs)} moods logged successfully'}), 201
 
 @app.route('/mood/report/<string:username>', methods=['GET'])
 def generate_user_mood_report(username):
     target_user = User.query.filter_by(username=username).first()
     if not target_user:
+        logging.warning(f'Mood report generation failed - User {username} not found')
         return jsonify({'message': 'User not found'}), 404
     user_mood_logs = MoodLog.query.options(joinedload(MoodLog.user)).filter_by(user_id=target_user.id).all()
     mood_report = {}
@@ -79,6 +87,7 @@ def generate_user_mood_report(username):
         if log_date not in mood_report:
             mood_report[log_date] = []
         mood_report[log_date].append({'mood': log.mood, 'description': log.description})
+    logging.info(f'Successfully generated mood report for user {username}')
     return jsonify(mood_report)
 
 if __name__ == '__main__':
