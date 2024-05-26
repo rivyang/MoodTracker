@@ -97,3 +97,13 @@ class MoodTracker:
         }
         insights['insight_message'] = f'Your most common mood from {start_date} to {end_date} is {prevalent_mood}.'
         return insights
+
+    @staticmethod
+    def export_moods_to_readable_file(start_date=None, end_date=None, file_path="exported_moods.txt"):
+        moods = MoodTracker.display_all_moods(start_date, end_date)
+        with open(file_path, 'w') as file:
+            for mood in moods:
+                file.write(f"Date: {mood['timestamp']}, Mood: {mood['mood']}\n")
+        print(f"Moods successfully exported to {file_path}")
+
+MoodTracker.export_moods_to_readable_file("2021-01-01", "2021-12-31")
