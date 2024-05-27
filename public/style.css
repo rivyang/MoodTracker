@@ -1,0 +1,72 @@
+body {
+    background-color: #f0f4f8;
+    color: #505f79;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+}
+.main-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #ffffff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+h1, h2, h3 {
+    color: #326273;
+}
+input[type="text"],
+textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+input[type="submit"] {
+    background-color: #88a5ad;
+    color: white;
+    padding: 14px 20px;
+    margin: 8px 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+input[type="submit"]:hover {
+    background-color: #7b949b;
+}
+.mood-happy {
+    color: #e9edc9;
+}
+.mood-ok {
+    color: #a8d5e2;
+}
+.mood-sad {
+    color: #f4b6c2;
+}
+.mood-angry {
+    color: #f28b82;
+}
+.text-center {
+    text-align: center;
+}
+.mb-20 {
+    margin-bottom: 20px;
+}
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+        margin: 10px;
+    }
+    input[type="text"],
+    textarea,
+    input[type="submit"] {
+        width: 100%;
+        margin: 4px 0;
+    }
+}
