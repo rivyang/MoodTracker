@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Logger</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Welcome to Your Personal Mood Logger</h1>
+    </header>
+    <section id="log-mood">
+        <h2>Log Today's Mood</h2>
+        <form action="/log_mood" method="post">
+            <label for="mood">How are you feeling today?</label>
+            <select name="mood" id="mood">
+                <option value="happy">Happy</option>
+                <option value="sad">Sad</option>
+                <option value="angry">Angry</option>
+                <option value="stressed">Stressed</option>
+            </select>
+            <label for="notes">Notes (optional):</label>
+            <textarea name="notes" id="notes" rows="4"></textarea>
+            <button type="submit">Log Mood</button>
+        </form>
+    </section>
+    <section id="past-entries">
+        <h2>Past Mood Entries</h2>
+        <ul>
+            {% for entry in past_entries %}
+                <li>{{ entry.date }} - Mood: {{ entry.mood }}, Notes: {{ entry.notes|default('No notes') }}</li>
+            {% else %}
+                <li>No past entries found.</li>
+            {% endfor %}
+        </ul>
+    </section>
+    <section id="mood-insights">
+        <h2>Mood Insights</h2>
+        {% if insights %}
+            <p>Your most common mood: {{ insights.most_common_mood }}</p>
+            <p>You have logged your mood {{ insights.total_logs }} times.</p>
+        {% else %}
+            <p>No insights to show yet. Start logging your mood to see insights.</p>
+        {% endif %}
+    </section>
+    <footer>
+        <p>&copy; {{ current_year }} Mood Logger. All rights reserved.</p>
+    </footer>
+    <script>
+        const apiBaseUrl = '{{ env("API_BASE_URL", "http://localhost:5000/") }}';
+        console.log('API Base URL:', apiBaseUrl);
+    </script>
+</body>
+</html>
