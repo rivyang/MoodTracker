@@ -5,10 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mood Logger</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+            --background-color: #ffffff;
+            --text-color: #000000;
+            --button-background: #e0e0e0;
+            --button-text-color: #000000;
+        }
+
+        [data-theme="dark"] {
+            --background-color: #363537;
+            --text-color: #FAFAFA;
+            --button-background: #424242;
+            --button-text-color: #FFFFFF;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        button {
+            background-color: var(--button-background);
+            color: var(--button-text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        /* Add additional styling here */
+    </style>
 </head>
 <body>
     <header>
         <h1>Welcome to Your Personal Mood Logger</h1>
+        <div style="text-align: right;">
+            <button id="theme-toggle">Toggle Dark Mode</button>
+        </div>
     </header>
     <section id="log-mood">
         <h2>Log Today's Mood</h2>
@@ -50,6 +82,12 @@
     <script>
         const apiBaseUrl = '{{ env("API_BASE_URL", "http://localhost:5000/") }}';
         console.log('API Base URL:', apiBaseUrl);
+
+        document.getElementById('theme-toggle').addEventListener('click', function() {
+            const currentTheme = document.documentElement.getAttribute("data-theme");
+            const switchToTheme = currentTheme === "dark" ? "" : "dark";
+            document.documentElement.setAttribute("data-theme", switchToTheme);
+        });
     </script>
 </body>
 </html>
