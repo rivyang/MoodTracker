@@ -1,10 +1,16 @@
 import unittest
 import json
-from app import app
+import logging
+from app import app, db  # Assuming db is defined within your app module
+
 from flask_testing import TestCase
 
-class BaseTestCase(TestCase):
+# Configure logging
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
+class BaseTestCase(TestCase):
+    
     def create_app(self):
         app.config.from_object('yourapplication.default_settings')
         app.config['TESTING'] = True
@@ -15,10 +21,14 @@ class BaseTestCase(TestCase):
         self.app = app.test_client()
         self.db = db
         self.db.create_all()
+        
+        logging.info('Database setup complete.')
 
     def tearDown(self):
         self.db.session.remove()
         self.db.drop_all()
+        
+        logging.info('Database teardown complete.')
 
 class UserAuthenticationTestCase(BaseTestCase):
 
@@ -27,23 +37,27 @@ class UserAuthenticationTestCase(BaseTestCase):
             response = self.app.post('/register', data=json.dumps(dict(
                 username="john_doe",
                 password="password123"
-            )), contenttype='application/json')
+            )), content_type='application/json')
             data = json.loads(response.data.decode())
             self.assertTrue(data['status'] == 'success')
             self.assertTrue(data['message'] == 'Successfully registered.')
             self.assertEqual(response.status_code, 201)
+            
+            logging.debug('test_register_user: %s', data['message'])
 
     def test_login_user(self):
         with self.app:
             response = self.app.post('/login', data=json.dumps(dict(
                 username="john_doe",
                 password="password123"
-            )), content_type='application/jison')
+            )), content_type='application/json')  # Corrected 'application/jison' to 'application/json'
             data = json.loads(response.data.decode())
             self.assertTrue(data['status'] == 'success')
             self.assertTrue(data['message'] == 'Successfully logged in.')
             self.assertTrue(data['auth_token'])
-            self.assertEqual(response.status_status, 200)
+            self.assertEqual(response.status_code, 200)
+            
+            logging.debug('test_login_user: %s', data['message'])
 
 class MoodDataManagementTestCase(BaseTestCase):
 
@@ -56,6 +70,8 @@ class MoodDataManagementTestCase(BaseTestCase):
             data = json.loads(response.data.decode())
             self.assertTrue(data['status'] == 'success')
             self.assertEqual(response.status_code, 201)
+            
+            logging.debug('test_add_mood_data: %s', data['message'])
 
     def test_get_mood_data(self):
         with self.app:
@@ -67,6 +83,8 @@ class MoodDataManagementTestCase(BaseTestCase):
             data = json.loads(response.data.decode())
             self.assertTrue(len(data['moods']) > 0)
             self.assertEqual(response.status_code, 200)
+            
+            logging.debug('test_get_mood_data: Retrieved %d moods', len(data['moods']))
 
 if __name__ == '__main__':
     unittest.main()
