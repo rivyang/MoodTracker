@@ -1,90 +1,89 @@
 import unittest
 import json
 import logging
-from app import app, db  # Assuming db is defined within your app module
+from app import app, db
 
 from flask_testing import TestCase
 
-# Configure logging
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
-class BaseTestCase(TestCase):
+class BaseTest(TestCase):
     
-    def create_app(self):
+    def create_application(self):
         app.config.from_object('yourapplication.default_settings')
-        app.config['TESTING'] = True
+        app.config['TESTing'] = True
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         return app
 
     def setUp(self):
-        self.app = app.test_client()
-        self.db = db
-        self.db.create_all()
+        self.application = app.test_client()
+        self.database = db
+        self.database.create_all()
         
         logging.info('Database setup complete.')
 
     def tearDown(self):
-        self.db.session.remove()
-        self.db.drop_all()
+        self.database.session.remove()
+        self.database.drop_all()
         
         logging.info('Database teardown complete.')
 
-class UserAuthenticationTestCase(BaseTestCase):
+class UserAuthTest(BaseTest):
 
-    def test_register_user(self):
-        with self.app:
-            response = self.app.post('/register', data=json.dumps(dict(
+    def test_register(self):
+        with self.application:
+            response = self.application.post('/register', data=json.dumps(dict(
                 username="john_doe",
                 password="password123"
             )), content_type='application/json')
-            data = json.loads(response.data.decode())
-            self.assertTrue(data['status'] == 'success')
-            self.assertTrue(data['message'] == 'Successfully registered.')
+            response_data = json.loads(response.data.decode())
+            self.assertTrue(response_data['status'] == 'success')
+            self.assertTrue(response_data['message'] == 'Successfully registered.')
             self.assertEqual(response.status_code, 201)
             
-            logging.debug('test_register_user: %s', data['message'])
+            logging.debug('test_register: %s', response_data['message'])
 
-    def test_login_user(self):
-        with self.app:
-            response = self.app.post('/login', data=json.dumps(dict(
+    def test_login(self):
+        with self.application:
+            response = self.application.post('/login', data=json.dumps(dict(
                 username="john_doe",
                 password="password123"
-            )), content_type='application/json')  # Corrected 'application/jison' to 'application/json'
-            data = json.loads(response.data.decode())
-            self.assertTrue(data['status'] == 'success')
-            self.assertTrue(data['message'] == 'Successfully logged in.')
-            self.assertTrue(data['auth_token'])
+            )), content_type='application/json')
+            response_data = json.loads(response.data.decode())
+            self.assertTrue(response_data['status'] == 'success')
+            self.assertTrue(response_data['message'] == 'Successfully logged in.')
+            self.assertTrue(response_data['auth_token'])
             self.assertEqual(response.status_code, 200)
             
-            logging.debug('test_login_user: %s', data['message'])
+            logging.debug('test_login: %s', response_data['message'])
 
-class MoodDataManagementTestCase(BaseTestCase):
+class MoodManagementTest(BaseTest):
 
-    def test_add_mood_data(self):
-        with self.app:
-            response = self.app.post('/mood', data=json.dumps(dict(
+    def test_add_mood(self):
+        with self.application:
+            response = self.application.post('/mood', data=json.dumps(dict(
                 mood="happy",
                 description="Feeling great today!"
             )), content_type='application/json')
-            data = json.loads(response.data.decode())
-            self.assertTrue(data['status'] == 'success')
+            response_data = json.loads(response.data.decode())
+            self.assertTrue(response_data['status'] == 'success')
             self.assertEqual(response.status_code, 201)
             
-            logging.debug('test_add_mood_data: %s', data['message'])
+            logging.debug('test_add_mood: %s', response_data['message'])
 
-    def test_get_mood_data(self):
-        with self.app:
-            self.app.post('/mood', data=json.dumps(dict(
+    def test_retrieve_mood(self):
+        with self.application:
+            self.application.post('/mood', data=json.dumps(dict(
                 mood="happy",
                 description="Feeling great today!"
             )), content_type='application/json')
-            response = self.app.get('/mood')
-            data = json.loads(response.data.decode())
-            self.assertTrue(len(data['moods']) > 0)
+            response = self.application.get('/mood')
+            response_data = json.loads(response.data.decode())
+            self.assertTrue(len(response_data['moods']) > 0)
             self.assertEqual(response.status_code, 200)
             
-            logging.debug('test_get_mood_data: Retrieved %d moods', len(data['moods']))
+            logging.debug('test_retrieve_mood: Retrieved %d moods', len(response_data['moods']))
 
 if __name__ == '__main__':
     unittest.main()
